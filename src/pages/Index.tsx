@@ -150,12 +150,19 @@ const Index = () => {
           </p>
           <div className="mt-3 inline-flex items-start gap-2 max-w-md text-left bg-[#2a2c30]/70 border border-[#4a4d52] rounded-sm px-4 py-2 animate-fade-in">
             <Icon name="MessageSquare" size={15} className="text-[#c9a24b] mt-0.5 shrink-0" />
-            <p className="font-body text-[13px] text-[#e8e6e1] italic">
-              «{applicant.greeting}»
-              <span className="not-italic text-[#7c7a73] font-mono text-[10px] ml-2">
-                / {applicant.greetingLang}
-              </span>
-            </p>
+            <div>
+              <p className="font-body text-[13px] text-[#e8e6e1] italic">
+                «{applicant.greeting}»
+                <span className="not-italic text-[#7c7a73] font-mono text-[10px] ml-2">
+                  / {applicant.greetingLang}
+                </span>
+              </p>
+              {applicant.greetingTranslation && (
+                <p className="font-body text-[11px] text-[#8f8c84] mt-0.5">
+                  {applicant.greetingTranslation}
+                </p>
+              )}
+            </div>
           </div>
         </div>
 
