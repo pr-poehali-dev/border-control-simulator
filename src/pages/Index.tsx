@@ -14,7 +14,7 @@ const RULES = [
   'Иностранцам — загранпаспорт.',
   'Гражданам Zɫatogrady — загранпаспорт + виза.',
   'Отказ: код паспорта или человека не типовой.',
-  'Отказ: цифры в коде паспорта ≠ день рождения.',
+  'Отказ: ВТОРЫЕ цифры в коде паспорта (после кода страны, из дня рождения) ≠ день рождения.',
   'Отказ: гражданин младше 18 лет.',
   'Отказ: гражданин Zɫatogrady без визы.',
 ];
@@ -125,7 +125,21 @@ const Index = () => {
       )}
 
       {/* Рабочий стол */}
-      <main className="flex-1 flex flex-col items-center px-6 py-8">
+      <main className="relative flex-1 flex flex-col items-center px-6 py-8">
+        {/* Табельное оружие на столе (декор) */}
+        <div className="pointer-events-none select-none hidden lg:flex flex-col items-center absolute bottom-8 right-8 opacity-90">
+          <div className="bg-[#3a3d43] border border-[#26282c] rounded-sm px-3 py-2 shadow-[4px_6px_0_rgba(0,0,0,0.25)] rotate-[8deg]">
+            <div className="flex items-center gap-1.5">
+              <Icon name="Crosshair" size={26} className="text-[#c9a24b]" />
+              <div className="w-14 h-3 bg-[#1f1d1a] rounded-sm" />
+              <div className="w-3 h-6 bg-[#1f1d1a] rounded-sm" />
+            </div>
+          </div>
+          <p className="mt-1 font-mono text-[9px] tracking-widest text-[#7c7a73] rotate-[8deg]">
+            ТАБЕЛЬНОЕ · ПМ
+          </p>
+        </div>
+
         <div className="mb-6 text-center">
           <p className="font-mono text-[12px] text-[#a9a69e] uppercase tracking-widest">
             Следующий посетитель
@@ -133,6 +147,15 @@ const Index = () => {
           <p className="font-display text-2xl tracking-wider text-[#f4f1ea]">
             Гражданин · {applicant.country.name}
           </p>
+          <div className="mt-3 inline-flex items-start gap-2 max-w-md text-left bg-[#2a2c30]/70 border border-[#4a4d52] rounded-sm px-4 py-2 animate-fade-in">
+            <Icon name="MessageSquare" size={15} className="text-[#c9a24b] mt-0.5 shrink-0" />
+            <p className="font-body text-[13px] text-[#e8e6e1] italic">
+              «{applicant.greeting}»
+              <span className="not-italic text-[#7c7a73] font-mono text-[10px] ml-2">
+                / {applicant.greetingLang}
+              </span>
+            </p>
+          </div>
         </div>
 
         {/* Документы на столе */}

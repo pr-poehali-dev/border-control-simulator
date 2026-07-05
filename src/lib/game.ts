@@ -26,6 +26,46 @@ const rnd = (arr: string) => arr[Math.floor(Math.random() * arr.length)];
 const rndItem = <T>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
 const pad2 = (n: number) => String(n).padStart(2, '0');
 
+// Приветственные фразы въезжающих (косметика). weight — вероятность языка в %.
+interface Phrase { weight: number; text: string; lang: string; }
+const GREETINGS: Record<CountryKey, Phrase[]> = {
+  TG: [
+    { weight: 85, lang: 'русский', text: 'Здравствуйте, товарищ инспектор!' },
+    { weight: 5, lang: 'литовский', text: 'Sveiki, inspektoriau!' },
+    { weight: 4, lang: 'украинский', text: 'Доброго дня, пане інспекторе!' },
+    { weight: 4, lang: 'белорусский', text: 'Добры дзень, спадар інспектар!' },
+    { weight: 1, lang: 'бурятский', text: 'Сайн байна, инспектор!' },
+  ],
+  BS: [{ weight: 100, lang: 'немецкий', text: 'Guten Tag, Herr Inspektor!' }],
+  FS: [
+    { weight: 80, lang: 'английский', text: 'Good day, inspector!' },
+    { weight: 10, lang: 'испанский', text: '¡Buenos días, inspector!' },
+    { weight: 5, lang: 'ирландский', text: 'Dia dhuit, a chigire!' },
+  ],
+  UE: [
+    { weight: 80, lang: 'английский', text: 'Good day, officer!' },
+    { weight: 10, lang: 'валлийский', text: 'Prynhawn da, arolygydd!' },
+    { weight: 5, lang: 'scots', text: 'Guid day tae ye, inspector!' },
+    { weight: 5, lang: 'ирландский', text: 'Dia dhuit, a chigire!' },
+  ],
+  ZG: [
+    { weight: 90, lang: 'польский', text: 'Dzień dobry, panie inspektorze!' },
+    { weight: 6, lang: 'литовский', text: 'Laba diena, inspektoriau!' },
+    { weight: 4, lang: 'латышский', text: 'Labdien, inspektor!' },
+  ],
+};
+
+function pickGreeting(key: CountryKey): Phrase {
+  const list = GREETINGS[key];
+  const total = list.reduce((s, p) => s + p.weight, 0);
+  let r = Math.random() * total;
+  for (const p of list) {
+    r -= p.weight;
+    if (r <= 0) return p;
+  }
+  return list[0];
+}
+
 function randomDate(minYear: number, maxYear: number): string {
   const day = 1 + Math.floor(Math.random() * 28);
   const month = 1 + Math.floor(Math.random() * 12);
@@ -63,6 +103,8 @@ export interface Applicant {
   documents: Document[];
   shouldAllow: boolean;
   reason: string;
+  greeting: string;
+  greetingLang: string;
 }
 
 type Flaw = 'none' | 'badPassCode' | 'badPersonCode' | 'birthMismatch' | 'underage' | 'noVisa';
@@ -145,7 +187,9 @@ export function generateApplicant(): Applicant {
   else if (underage) { shouldAllow = false; reason = 'Гражданин младше 18 лет'; }
   else if (flaw === 'noVisa') { shouldAllow = false; reason = 'Гражданин Zɫatogrady не предъявил визу'; }
 
-  return { country, documents, shouldAllow, reason };
+  const greeting = pickGreeting(country.key);
+
+  return { country, documents, shouldAllow, reason, greeting: greeting.text, greetingLang: greeting.lang };
 }
 
 export { ageFromBirth };
