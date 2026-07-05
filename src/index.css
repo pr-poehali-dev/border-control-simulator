@@ -99,3 +99,63 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  .paper-texture {
+    background-color: #e7e5e1;
+    background-image:
+      repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.015) 0px,
+        rgba(0, 0, 0, 0.015) 1px,
+        transparent 1px,
+        transparent 3px
+      ),
+      radial-gradient(circle at 20% 30%, rgba(0, 0, 0, 0.03), transparent 60%);
+  }
+  .booth-bg {
+    background-color: #4a4d52;
+    background-image:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, transparent 40%),
+      repeating-linear-gradient(
+        45deg,
+        rgba(0, 0, 0, 0.04) 0px,
+        rgba(0, 0, 0, 0.04) 2px,
+        transparent 2px,
+        transparent 14px
+      );
+  }
+  @keyframes stamp-slam {
+    0% {
+      transform: translate(-50%, -50%) scale(3) rotate(-18deg);
+      opacity: 0;
+    }
+    60% {
+      transform: translate(-50%, -50%) scale(0.92) rotate(-11deg);
+      opacity: 1;
+    }
+    80% {
+      transform: translate(-50%, -50%) scale(1.04) rotate(-13deg);
+    }
+    100% {
+      transform: translate(-50%, -50%) scale(1) rotate(-12deg);
+      opacity: 1;
+    }
+  }
+  .animate-stamp {
+    animation: stamp-slam 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) forwards;
+  }
+  @keyframes doc-in {
+    0% {
+      transform: translateY(24px) rotate(1deg);
+      opacity: 0;
+    }
+    100% {
+      transform: translateY(0) rotate(-0.6deg);
+      opacity: 1;
+    }
+  }
+  .animate-doc-in {
+    animation: doc-in 0.4s ease-out forwards;
+  }
+}

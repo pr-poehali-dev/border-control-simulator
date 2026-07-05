@@ -1,15 +1,220 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState, useCallback } from 'react';
+import Icon from '@/components/ui/icon';
+import {
+  generateApplicant,
+  CURRENT_DATE,
+  type Applicant,
+  type Document,
+} from '@/lib/game';
+
+type Verdict = 'ALLOW' | 'DENY';
+
+const RULES = [
+  'Гражданам Трудоградов — паспорт Трудоградов.',
+  'Иностранцам — загранпаспорт.',
+  'Гражданам Zɫatogrady — загранпаспорт + виза.',
+  'Отказ: код паспорта или человека не типовой.',
+  'Отказ: цифры в коде паспорта ≠ день рождения.',
+  'Отказ: гражданин младше 18 лет.',
+  'Отказ: гражданин Zɫatogrady без визы.',
+];
+
+const DocumentCard = ({ doc }: { doc: Document }) => (
+  <div className="animate-doc-in bg-[#f4f1ea] border-2 border-[#8a8578] shadow-[6px_8px_0_rgba(0,0,0,0.18)] p-5 -rotate-[0.6deg]">
+    <div className="flex items-center gap-2 border-b-2 border-[#8a8578] pb-2 mb-3">
+      <div className="w-6 h-6 rounded-full border-2 border-[#6b3b2e] flex items-center justify-center">
+        <Icon name="Shield" size={13} className="text-[#6b3b2e]" />
+      </div>
+      <h3 className="font-display font-600 tracking-wider text-[#2c2a26] text-sm">
+        {doc.title}
+      </h3>
+    </div>
+    <div className="space-y-1.5">
+      {doc.lines.map((line) => (
+        <div key={line.label} className="flex justify-between gap-4 text-[13px]">
+          <span className="font-body text-[#6f6a5e] uppercase tracking-wide text-[11px] pt-0.5">
+            {line.label}
+          </span>
+          <span className="font-mono font-500 text-[#1f1d1a] text-right">
+            {line.value}
+          </span>
+        </div>
+      ))}
+    </div>
+  </div>
+);
 
 const Index = () => {
+  const [applicant, setApplicant] = useState<Applicant>(() => generateApplicant());
+  const [verdict, setVerdict] = useState<Verdict | null>(null);
+  const [correct, setCorrect] = useState<boolean | null>(null);
+  const [stats, setStats] = useState({ total: 0, right: 0 });
+  const [showRules, setShowRules] = useState(false);
+
+  const decide = useCallback(
+    (v: Verdict) => {
+      if (verdict) return;
+      const isRight = (v === 'ALLOW') === applicant.shouldAllow;
+      setVerdict(v);
+      setCorrect(isRight);
+      setStats((s) => ({ total: s.total + 1, right: s.right + (isRight ? 1 : 0) }));
+    },
+    [verdict, applicant],
+  );
+
+  const next = useCallback(() => {
+    setApplicant(generateApplicant());
+    setVerdict(null);
+    setCorrect(null);
+  }, []);
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4 color-black text-black">Добро пожаловать!</h1>
-        <p className="text-xl text-gray-600">тут будет отображаться ваш проект</p>
-      </div>
-      <span className="absolute bottom-8 left-1/2 -translate-x-1/2 inline-block bg-[#FF6637] text-white text-sm px-4 py-2 rounded-full whitespace-nowrap">
-        Подождите 5 минут, Юра создает первую версию проекта с нуля
-      </span>
+    <div className="min-h-screen booth-bg font-body text-[#e8e6e1] flex flex-col">
+      {/* Верхняя панель */}
+      <header className="border-b-4 border-[#2a2c30] bg-[#33353a]/80 backdrop-blur px-6 py-4 flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-sm bg-[#6b3b2e] flex items-center justify-center shadow-inner">
+            <Icon name="Stamp" size={22} className="text-[#f4f1ea]" />
+          </div>
+          <div>
+            <h1 className="font-display text-xl tracking-widest font-600 leading-none">
+              ПОГРАНИЧНЫЙ КОНТРОЛЬ
+            </h1>
+            <p className="font-mono text-[11px] text-[#a9a69e] tracking-wide mt-0.5">
+              Аэропорт · Большой Город · Трудограды
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-5 font-mono text-[12px]">
+          <div className="text-right">
+            <p className="text-[#a9a69e] text-[10px] uppercase">Дата</p>
+            <p className="text-[#e8e6e1] tracking-wider">{CURRENT_DATE}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-[#a9a69e] text-[10px] uppercase">Верно</p>
+            <p className="tracking-wider">
+              <span className="text-[#7fb069]">{stats.right}</span>
+              <span className="text-[#6f6a5e]"> / {stats.total}</span>
+            </p>
+          </div>
+          <button
+            onClick={() => setShowRules((s) => !s)}
+            className="flex items-center gap-1.5 border border-[#5a5d63] hover:border-[#8a8d93] px-3 py-2 rounded-sm transition-colors"
+          >
+            <Icon name="BookOpen" size={15} />
+            Устав
+          </button>
+        </div>
+      </header>
+
+      {/* Устав */}
+      {showRules && (
+        <div className="bg-[#2a2c30] border-b-2 border-[#1c1e21] px-6 py-4 animate-fade-in">
+          <h2 className="font-display tracking-widest text-[#c9a24b] text-sm mb-2 flex items-center gap-2">
+            <Icon name="ScrollText" size={16} /> ИНСТРУКЦИЯ ИНСПЕКТОРА
+          </h2>
+          <ul className="grid md:grid-cols-2 gap-x-8 gap-y-1 font-mono text-[12px] text-[#c4c1ba]">
+            {RULES.map((r, i) => (
+              <li key={i} className="flex gap-2">
+                <span className="text-[#6b3b2e]">§{i + 1}</span>
+                <span>{r}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Рабочий стол */}
+      <main className="flex-1 flex flex-col items-center px-6 py-8">
+        <div className="mb-6 text-center">
+          <p className="font-mono text-[12px] text-[#a9a69e] uppercase tracking-widest">
+            Следующий посетитель
+          </p>
+          <p className="font-display text-2xl tracking-wider text-[#f4f1ea]">
+            Гражданин · {applicant.country.name}
+          </p>
+        </div>
+
+        {/* Документы на столе */}
+        <div className="relative">
+          <div className="grid sm:grid-cols-2 gap-6 max-w-3xl">
+            {applicant.documents.map((doc, i) => (
+              <DocumentCard key={i} doc={doc} />
+            ))}
+          </div>
+
+          {/* Штамп поверх документов */}
+          {verdict && (
+            <div
+              className={`absolute top-1/2 left-1/2 animate-stamp pointer-events-none select-none border-[5px] px-6 py-3 font-display tracking-widest text-2xl font-700 ${
+                verdict === 'ALLOW'
+                  ? 'border-[#2f6b3a] text-[#2f6b3a]'
+                  : 'border-[#8a2b22] text-[#8a2b22]'
+              }`}
+              style={{ backgroundColor: 'rgba(244,241,234,0.55)' }}
+            >
+              {verdict === 'ALLOW' ? 'ВЪЕЗД РАЗРЕШЁН' : 'ВЪЕЗД ЗАПРЕЩЁН'}
+            </div>
+          )}
+        </div>
+
+        {/* Панель решения */}
+        <div className="mt-10 w-full max-w-3xl">
+          {!verdict ? (
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                onClick={() => decide('ALLOW')}
+                className="group flex items-center justify-center gap-3 bg-[#2f6b3a] hover:bg-[#37803f] active:scale-[0.98] transition-all py-5 rounded-sm font-display tracking-widest text-lg shadow-[0_6px_0_#1f4a28]"
+              >
+                <Icon name="Check" size={22} />
+                РАЗРЕШИТЬ ВЪЕЗД
+              </button>
+              <button
+                onClick={() => decide('DENY')}
+                className="group flex items-center justify-center gap-3 bg-[#8a2b22] hover:bg-[#a3332a] active:scale-[0.98] transition-all py-5 rounded-sm font-display tracking-widest text-lg shadow-[0_6px_0_#5e1c16]"
+              >
+                <Icon name="X" size={22} />
+                ЗАПРЕТИТЬ ВЪЕЗД
+              </button>
+            </div>
+          ) : (
+            <div className="animate-fade-in">
+              <div
+                className={`flex items-start gap-3 border-l-4 p-4 rounded-sm mb-4 ${
+                  correct
+                    ? 'border-[#7fb069] bg-[#2f6b3a]/20'
+                    : 'border-[#c9584d] bg-[#8a2b22]/20'
+                }`}
+              >
+                <Icon
+                  name={correct ? 'CircleCheck' : 'CircleAlert'}
+                  size={22}
+                  className={correct ? 'text-[#7fb069] mt-0.5' : 'text-[#e08a80] mt-0.5'}
+                />
+                <div>
+                  <p className="font-display tracking-wider text-sm">
+                    {correct ? 'ВЕРНОЕ РЕШЕНИЕ' : 'ОШИБКА ИНСПЕКТОРА'}
+                  </p>
+                  <p className="font-mono text-[12px] text-[#c4c1ba] mt-1">
+                    {applicant.reason}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={next}
+                className="w-full flex items-center justify-center gap-2 bg-[#3a3d43] hover:bg-[#474a51] active:scale-[0.99] transition-all py-4 rounded-sm font-display tracking-widest shadow-[0_5px_0_#26282c]"
+              >
+                СЛЕДУЮЩИЙ ПОСЕТИТЕЛЬ
+                <Icon name="ArrowRight" size={18} />
+              </button>
+            </div>
+          )}
+        </div>
+      </main>
+
+      <footer className="text-center py-4 font-mono text-[10px] text-[#7c7a73] border-t border-[#2a2c30]">
+        СЛУЖБА ПОГРАНИЧНОГО КОНТРОЛЯ ТРУДОГРАДОВ · ОТДЕЛ ПРОВЕРКИ ДОКУМЕНТОВ
+      </footer>
     </div>
   );
 };
