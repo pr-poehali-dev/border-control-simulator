@@ -300,7 +300,7 @@ export function generateApplicant(): Applicant {
       documents.push({
         title: 'ВИЗА',
         lines: [
-          { label: 'ИФ', value: ruName },
+          { label: 'ИФ', value: enName },
           { label: 'Дата рождения', value: birth },
           { label: 'Въезд до', value: randomDate(1981, 1990) },
           { label: 'Код паспорта', value: pcode },
