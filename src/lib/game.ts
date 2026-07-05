@@ -240,7 +240,7 @@ export interface Applicant {
   greetingTranslation?: string;
 }
 
-type Flaw = 'none' | 'badPassCode' | 'badPersonCode' | 'birthMismatch' | 'underage' | 'noVisa';
+type Flaw = 'none' | 'badPassCode' | 'badPersonCode' | 'birthMismatch' | 'noVisa';
 
 export function generateApplicant(): Applicant {
   const country = rndItem(Object.values(COUNTRIES));
@@ -248,15 +248,15 @@ export function generateApplicant(): Applicant {
   const isZG = country.key === 'ZG';
 
   // выбираем изъян (или его отсутствие)
-  const flaws: Flaw[] = ['none', 'none', 'badPassCode', 'birthMismatch', 'underage'];
+  const flaws: Flaw[] = ['none', 'none', 'badPassCode', 'birthMismatch'];
   if (isZG) flaws.push('noVisa', 'noVisa');
   flaws.push('badPersonCode');
   let flaw = rndItem(flaws);
   // noVisa применимо только к ZG
   if (flaw === 'noVisa' && !isZG) flaw = 'none';
 
-  const underage = flaw === 'underage';
-  const birth = underage ? randomDate(1964, 1968) : randomDate(1920, 1961);
+  // возраст въезжающих: от 12 лет и старше (паспорт выдаётся с 12-14 лет)
+  const birth = randomDate(1920, 1966);
 
   const ruName = rndItem(RU_NAMES);
   const enName = rndItem(EN_NAMES);
@@ -317,7 +317,6 @@ export function generateApplicant(): Applicant {
   if (badPassLen) { shouldAllow = false; reason = 'Код паспорта не типовой'; }
   else if (badPersonLen) { shouldAllow = false; reason = 'Код человека не типовой'; }
   else if (corruptPass) { shouldAllow = false; reason = 'Цифры в коде паспорта не совпадают с днём рождения'; }
-  else if (underage) { shouldAllow = false; reason = 'Гражданин младше 18 лет'; }
   else if (flaw === 'noVisa') { shouldAllow = false; reason = 'Гражданин Zɫatogrady не предъявил визу'; }
 
   const greeting = pickGreeting(country.key);
@@ -334,3 +333,8 @@ export function generateApplicant(): Applicant {
 }
 
 export { ageFromBirth };
+
+// Нападение: 5% шанс на посетителя
+export function rollAttack(): boolean {
+  return Math.random() < 0.05;
+}

@@ -1,13 +1,15 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import Icon from '@/components/ui/icon';
 import {
   generateApplicant,
+  rollAttack,
   CURRENT_DATE,
   type Applicant,
   type Document,
 } from '@/lib/game';
 
 type Verdict = 'ALLOW' | 'DENY';
+type LifeState = 'alive' | 'dead';
 
 const RULES = [
   'Гражданам Трудоградов — паспорт Трудоградов.',
@@ -16,9 +18,11 @@ const RULES = [
   'Отказ: код паспорта не типовой. Формула: 2 случайные цифры + код страны + день рождения (2 цифры) + случайная буква.',
   'Отказ: код человека не типовой. Формула: 2 случайные цифры + 2 случайные латинские буквы + случайная цифра + случайная буква.',
   'Отказ: ВТОРЫЕ цифры в коде паспорта (после кода страны, из дня рождения) ≠ день рождения.',
-  'Отказ: гражданин младше 18 лет.',
   'Отказ: гражданин Zɫatogrady без визы.',
+  'Внимание: около 5% посетителей — нападающие. Успей нажать "ОГОНЬ НА ПОРАЖЕНИЕ".',
 ];
+
+const ATTACK_SECONDS = 3;
 
 const DocumentCard = ({ doc }: { doc: Document }) => (
   <div className="animate-doc-in bg-[#f4f1ea] border-2 border-[#8a8578] shadow-[6px_8px_0_rgba(0,0,0,0.18)] p-5 -rotate-[0.6deg]">
@@ -52,22 +56,102 @@ const Index = () => {
   const [stats, setStats] = useState({ total: 0, right: 0 });
   const [showRules, setShowRules] = useState(false);
 
+  const [life, setLife] = useState<LifeState>('alive');
+  const [isAttack, setIsAttack] = useState(false);
+  const [survived, setSurvived] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(ATTACK_SECONDS);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const clearTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+
+  // Проверяем нападение при появлении нового посетителя
+  useEffect(() => {
+    if (rollAttack()) {
+      setIsAttack(true);
+      setSurvived(false);
+      setTimeLeft(ATTACK_SECONDS);
+    }
+    return () => clearTimer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [applicant]);
+
+  // Тикающий таймер нападения
+  useEffect(() => {
+    if (!isAttack || survived) return;
+    timerRef.current = setInterval(() => {
+      setTimeLeft((t) => {
+        if (t <= 1) {
+          clearTimer();
+          setLife('dead');
+          return 0;
+        }
+        return t - 1;
+      });
+    }, 1000);
+    return () => clearTimer();
+  }, [isAttack, survived, clearTimer]);
+
+  const fire = useCallback(() => {
+    if (!isAttack || survived || life === 'dead') return;
+    clearTimer();
+    setSurvived(true);
+    setIsAttack(false);
+    setTimeout(() => setSurvived(false), 2000);
+  }, [isAttack, survived, life, clearTimer]);
+
   const decide = useCallback(
     (v: Verdict) => {
-      if (verdict) return;
+      if (verdict || isAttack || life === 'dead') return;
       const isRight = (v === 'ALLOW') === applicant.shouldAllow;
       setVerdict(v);
       setCorrect(isRight);
       setStats((s) => ({ total: s.total + 1, right: s.right + (isRight ? 1 : 0) }));
     },
-    [verdict, applicant],
+    [verdict, applicant, isAttack, life],
   );
 
   const next = useCallback(() => {
     setApplicant(generateApplicant());
     setVerdict(null);
     setCorrect(null);
+    setIsAttack(false);
+    setSurvived(false);
   }, []);
+
+  const restart = useCallback(() => {
+    setLife('alive');
+    setStats({ total: 0, right: 0 });
+    next();
+  }, [next]);
+
+  if (life === 'dead') {
+    return (
+      <div className="min-h-screen bg-[#1a1b1d] font-body text-[#e8e6e1] flex flex-col items-center justify-center px-6 animate-fade-in">
+        <Icon name="Skull" size={56} className="text-[#8a2b22] mb-4" />
+        <h1 className="font-display text-3xl tracking-widest text-[#8a2b22] mb-2">
+          ИНСПЕКТОР ПОГИБ
+        </h1>
+        <p className="font-mono text-[13px] text-[#a9a69e] mb-8 text-center max-w-sm">
+          Вы не успели отреагировать на нападение. Смена окончена.
+        </p>
+        <div className="font-mono text-[12px] text-[#7c7a73] mb-6">
+          Верных решений за смену: <span className="text-[#e8e6e1]">{stats.right} / {stats.total}</span>
+        </div>
+        <button
+          onClick={restart}
+          className="flex items-center gap-2 bg-[#3a3d43] hover:bg-[#474a51] active:scale-[0.98] transition-all px-6 py-4 rounded-sm font-display tracking-widest shadow-[0_5px_0_#26282c]"
+        >
+          <Icon name="RotateCcw" size={18} />
+          НАЧАТЬ НОВУЮ СМЕНУ
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen booth-bg font-body text-[#e8e6e1] flex flex-col">
@@ -122,6 +206,36 @@ const Index = () => {
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {/* Оверлей нападения */}
+      {isAttack && (
+        <div className="fixed inset-0 z-50 bg-[#8a2b22]/95 backdrop-blur-sm flex flex-col items-center justify-center px-6 animate-fade-in">
+          <Icon name="TriangleAlert" size={48} className="text-[#f4f1ea] mb-4 animate-pulse" />
+          <h2 className="font-display text-3xl tracking-widest text-[#f4f1ea] mb-2 text-center">
+            НАПАДЕНИЕ!
+          </h2>
+          <p className="font-mono text-[13px] text-[#f4d9d5] mb-6 text-center max-w-sm">
+            Посетитель достал оружие. У вас есть {timeLeft} сек, чтобы открыть огонь на поражение.
+          </p>
+          <div className="font-display text-6xl font-700 text-[#f4f1ea] mb-8 tabular-nums">
+            {timeLeft}
+          </div>
+          <button
+            onClick={fire}
+            className="flex items-center gap-3 bg-[#1f1d1a] hover:bg-[#2c2a26] active:scale-[0.97] transition-all px-8 py-5 rounded-sm font-display tracking-widest text-xl shadow-[0_6px_0_#000] border-2 border-[#f4f1ea]"
+          >
+            <Icon name="Crosshair" size={24} className="text-[#c9a24b]" />
+            ОГОНЬ НА ПОРАЖЕНИЕ
+          </button>
+        </div>
+      )}
+
+      {/* Уведомление об успешной обороне */}
+      {survived && (
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-[#2f6b3a] border-2 border-[#7fb069] px-6 py-3 rounded-sm font-display tracking-widest text-sm animate-fade-in shadow-lg">
+          УГРОЗА НЕЙТРАЛИЗОВАНА
         </div>
       )}
 
